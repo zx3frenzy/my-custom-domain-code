@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tint World | Vehicle Install Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  </head>
+  <body>
+    <section class="auth-gate" id="authGate">
+      <form class="login-card" id="loginForm">
+        <div class="login-logo"><span>TW</span><b><i>TINT</i> WORLD</b></div>
+        <p class="eyebrow">STAFF ACCESS</p><h1>Warranty tracker</h1><p>Sign in to access shared installation warranties.</p>
+        <label>Email <input id="loginEmail" type="email" autocomplete="email" required placeholder="you@tintworld.com" /></label>
+        <label>Password <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Your password" /></label>
+        <button class="button primary" type="submit">Sign in</button><p class="login-message" id="loginMessage"></p>
+      </form>
+    </section>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#"><span class="brand-mark">TW</span><span><b>TINT</b> WORLD<small>Automotive styling</small></span></a>
+        <nav>
+          <a class="nav-item active" href="#installations"><span>◫</span> Installations</a>
+          <a class="nav-item" href="#new-install"><span>＋</span> New install</a>
+        </nav>
+        <div class="sidebar-foot"><span class="status-dot"></span> Shared cloud workspace</div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div><p class="eyebrow">INSTALLATION MANAGEMENT</p><h1>Vehicle installs</h1></div>
+          <div class="topbar-actions"><button class="button secondary" id="exportBtn">⇩ Export warranties</button><button class="button primary" id="newInstallBtn">+ New installation</button></div>
+        </header>
+
+        <section id="installations" class="dashboard">
+          <div class="metrics">
+            <article><span>Total installs</span><strong id="installCount">0</strong></article>
+            <article><span>Window tint</span><strong id="tintCount">0</strong></article>
+            <article><span>Today</span><strong id="todayCount">0</strong></article>
+          </div>
+          <div class="list-heading">
+            <div><h2>Recent installations</h2><p>All work orders recorded at this shop.</p></div>
+            <div class="list-filters"><label class="store-filter">Store <select id="storeFilter"><option value="">All stores</option><option value="028">028</option><option value="047">047</option><option value="113">113</option></select></label><label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="Search VIN, make, model…" /></label></div>
+          </div>
+          <div class="install-list" id="installList"></div>
+        </section>
+
+        <section id="new-install" class="form-section hidden">
+          <div class="form-heading"><div><button class="back-link" id="backBtn">← Back to installations</button><h2 id="formTitle">New installation</h2><p>Create a work record and track material used.</p></div><span class="draft-pill">DRAFT</span></div>
+          <form id="installForm" novalidate>
+            <div class="form-card">
+              <div class="card-title"><span class="step">01</span><div><h3>Vehicle</h3><p>Identify the vehicle receiving service.</p></div></div>
+              <div class="form-grid vehicle-grid">
+                <label class="vin-field">VIN <span class="vin-entry"><input id="vin" minlength="17" maxlength="17" pattern="[A-HJ-NPR-Z0-9]{17}" title="Enter a valid 17-character VIN" placeholder="e.g. 1HGCM82633A004352" required /><button type="button" class="lookup-button" id="vinLookupBtn">Lookup</button><label class="scan-button" for="vinPhoto">▣ Scan photo</label><input id="vinPhoto" class="visually-hidden" type="file" accept="image/*" capture="environment" /></span><small id="vinMessage">Enter all 17 characters, or scan a clear photo of the VIN label.</small></label>
+                <label>Make <input id="make" placeholder="e.g. Tesla" required /></label>
+                <label>Model <input id="model" placeholder="e.g. Model 3" required /></label>
+                <label>Year <input id="year" type="number" min="1900" max="2100" placeholder="Optional" /></label>
+                <label>Store number <select id="storeNumber" required><option value="">Select store</option><option value="028">028</option><option value="047">047</option><option value="113">113</option></select></label>
+                <div class="work-order-scan"><b>Customer work-order scan</b><span><label class="scan-button" for="workOrderPhoto">▣ Scan work order</label><input id="workOrderPhoto" class="visually-hidden" type="file" accept="image/*" capture="environment" /></span><small id="workOrderMessage">Scan the work order to fill customer details and the store number.</small></div>
+                <label>Customer first name <input id="customerFirstName" autocomplete="given-name" placeholder="e.g. Jordan" /></label>
+                <label>Customer last name <input id="customerLastName" autocomplete="family-name" placeholder="e.g. Smith" /></label>
+                <label>Phone number <input id="phone" type="tel" autocomplete="tel" placeholder="e.g. 555-555-5555" /></label>
+                <label>Customer email <input id="customerEmail" type="email" autocomplete="email" value="chase.norman@tintworld.com" /></label>
+                <label>Work order number <input id="workOrderNumber" placeholder="e.g. WO-10482" /></label>
+                <label>Installation date <input id="installationDate" type="date" required /></label>
+              </div>
+            </div>
+
+            <div class="form-card">
+              <div class="card-title"><span class="step">02</span><div><h3>Products installed</h3><p>Select every service included in this work order.</p></div></div>
+              <div class="product-selector">
+                <label class="product-option"><input class="product-check" type="checkbox" value="Window Tint" data-target="tintDetails" /><span class="checkmark"></span><span class="product-icon">◒</span><span><b>Window tint</b><small>Film coverage &amp; material tracking</small></span></label>
+                <label class="product-option"><input class="product-check" type="checkbox" value="Paint Protection Film" /><span class="checkmark"></span><span class="product-icon">◇</span><span><b>Paint protection film</b><small>Coverage, finish &amp; material tracking</small></span></label>
+                <label class="product-option"><input class="product-check" type="checkbox" value="Ceramic Coating" /><span class="checkmark"></span><span class="product-icon">✦</span><span><b>Ceramic coating</b><small>Application details ready for expansion</small></span></label>
+              </div>
+            </div>
+
+            <div class="form-card tint-card hidden" id="tintDetails">
+              <div class="card-title"><span class="step">03</span><div><h3>Window tint coverage</h3><p>Record shade and material roll for each covered area.</p></div></div>
+              <label>Tint film series <span class="field-entry"><select id="tintFilmSeries"><option value="">Select film series</option><option value="Prime XR Plus">Prime XR Plus</option><option value="Prime XR Black">Prime XR Black</option><option value="Prime HP">Prime HP</option></select><label class="scan-button" for="tintLabelPhoto">▣ Scan product label</label><input id="tintLabelPhoto" class="visually-hidden" type="file" accept="image/*" capture="environment" /></span><small id="tintLabelMessage">Scan an XPEL tint label to fill film series, VLT, and roll ID.</small></label>
+              <div class="coverage-table" role="table">
+                <div class="coverage-row coverage-header tint-row" role="row"><span>Covered area</span><span>Film series</span><span>VLT / shade</span><span>Roll ID</span><span>Label</span></div>
+                <label class="coverage-row tint-row" role="row"><span class="area"><input class="area-check" data-area="Windshield" type="checkbox" /> <b>Windshield</b></span><select class="tint-film-select" disabled><option value="">Choose film</option><option>Prime XR Plus</option><option>Prime XR Black</option><option>Prime HP</option></select><input class="vlt-input" disabled placeholder="e.g. 70%" /><input class="roll-input" disabled placeholder="e.g. 121649014" /><label class="area-scan-button" for="tintLabelWindshield">▣</label><input id="tintLabelWindshield" class="tint-area-photo visually-hidden" type="file" accept="image/*" capture="environment" disabled /></label>
+                <label class="coverage-row tint-row" role="row"><span class="area"><input class="area-check" data-area="Front Windows" type="checkbox" /> <b>Front windows</b></span><select class="tint-film-select" disabled><option value="">Choose film</option><option>Prime XR Plus</option><option>Prime XR Black</option><option>Prime HP</option></select><input class="vlt-input" disabled placeholder="e.g. 35%" /><input class="roll-input" disabled placeholder="e.g. 121649014" /><label class="area-scan-button" for="tintLabelFront">▣</label><input id="tintLabelFront" class="tint-area-photo visually-hidden" type="file" accept="image/*" capture="environment" disabled /></label>
+                <label class="coverage-row tint-row" role="row"><span class="area"><input class="area-check" data-area="Rear Windows" type="checkbox" /> <b>Rear windows</b></span><select class="tint-film-select" disabled><option value="">Choose film</option><option>Prime XR Plus</option><option>Prime XR Black</option><option>Prime HP</option></select><input class="vlt-input" disabled placeholder="e.g. 20%" /><input class="roll-input" disabled placeholder="e.g. 121649014" /><label class="area-scan-button" for="tintLabelRear">▣</label><input id="tintLabelRear" class="tint-area-photo visually-hidden" type="file" accept="image/*" capture="environment" disabled /></label>
+              </div>
+            </div>
+
+            <div class="form-card ppf-card hidden" id="ppfDetails">
+              <div class="card-title"><span class="step">04</span><div><h3>Paint protection film coverage</h3><p>Select the installed coverage, film line, and material roll.</p></div></div>
+              <label>PPF product label <span class="field-entry"><span class="label-hint">Scan to fill PPF film type and roll number.</span><label class="scan-button" for="ppfLabelPhoto">▣ Scan product label</label><input id="ppfLabelPhoto" class="visually-hidden" type="file" accept="image/*" capture="environment" /></span><small id="ppfLabelMessage">Select the covered areas after scanning the label.</small></label>
+              <div class="coverage-table ppf-table" role="table">
+                <div class="coverage-row coverage-header ppf-row" role="row"><span>Coverage</span><span>Film type</span><span>Roll number</span><span>Label</span></div>
+                <label class="coverage-row ppf-row" role="row"><span class="area"><input class="ppf-check" data-coverage="Partial Front" type="checkbox" /> <b>Partial front</b></span><select class="film-select" disabled><option value="">Choose film</option><option>Ultimate Plus</option><option>Stealth</option><option>Colored Film</option></select><input class="ppf-roll-input" disabled placeholder="e.g. PPF-3082" /><label class="area-scan-button" for="ppfLabelPartial">▣</label><input id="ppfLabelPartial" class="ppf-area-photo visually-hidden" type="file" accept="image/*" capture="environment" disabled /></label>
+                <label class="coverage-row ppf-row" role="row"><span class="area"><input class="ppf-check" data-coverage="Full Front" type="checkbox" /> <b>Full front</b></span><select class="film-select" disabled><option value="">Choose film</option><option>Ultimate Plus</option><option>Stealth</option><option>Colored Film</option></select><input class="ppf-roll-input" disabled placeholder="e.g. PPF-3082" /><label class="area-scan-button" for="ppfLabelFullFront">▣</label><input id="ppfLabelFullFront" class="ppf-area-photo visually-hidden" type="file" accept="image/*" capture="environment" disabled /></label>
+                <label class="coverage-row ppf-row" role="row"><span class="area"><input class="ppf-check" data-coverage="Full Car" type="checkbox" /> <b>Full car</b></span><select class="film-select" disabled><option value="">Choose film</option><option>Ultimate Plus</option><option>Stealth</option><option>Colored Film</option></select><input class="ppf-roll-input" disabled placeholder="e.g. PPF-3082" /><label class="area-scan-button" for="ppfLabelFullCar">▣</label><input id="ppfLabelFullCar" class="ppf-area-photo visually-hidden" type="file" accept="image/*" capture="environment" disabled /></label>
+              </div>
+            </div>
+
+            <div class="form-card ceramic-card hidden" id="ceramicDetails">
+              <div class="card-title"><span class="step">05</span><div><h3>Ceramic coating package</h3><p>Select the protection term installed on this vehicle.</p></div></div>
+              <div class="coating-options" role="radiogroup" aria-label="Ceramic coating term">
+                <label class="coating-option"><input type="radio" name="coatingTerm" value="1 Year" /><span><b>1 year</b><small>Coating protection</small></span></label>
+                <label class="coating-option"><input type="radio" name="coatingTerm" value="4 Year" /><span><b>4 year</b><small>Extended protection</small></span></label>
+                <label class="coating-option"><input type="radio" name="coatingTerm" value="8 Year" /><span><b>8 year</b><small>Maximum protection</small></span></label>
+              </div>
+            </div>
+
+            <div class="form-card">
+              <div class="card-title"><span class="step" id="notesStep">03</span><div><h3>Work notes</h3><p>Optional instructions, warranty notes, or customer requests.</p></div></div>
+              <textarea id="notes" rows="4" placeholder="Add any details for this installation…"></textarea>
+            </div>
+            <div class="form-actions"><button type="button" class="button secondary" id="cancelBtn">Cancel</button><button type="submit" class="button primary">Save installation <span>→</span></button></div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <template id="emptyState"><div class="empty-state"><div class="empty-icon">◫</div><h3>No installations yet</h3><p>Start a work order to keep vehicle and material records in one place.</p><button class="button primary empty-new">+ New installation</button></div></template>
+    <template id="installItem"><article class="install-item"><div class="vehicle-avatar"></div><div class="install-main"><div class="install-title"><h3></h3><span class="date-label"></span></div><p class="vin-label"></p><div class="tags"></div></div><div class="item-actions"><button class="icon-button print-action" title="Print work order">⌑</button><button class="icon-button edit-action" title="Edit installation">✎</button><button class="icon-button delete-action" title="Delete installation">×</button></div></article></template>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
